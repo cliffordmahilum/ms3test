@@ -33,7 +33,7 @@ public class ColumnsController {
         txtLogs.setText(message);
         lstData = CSVController.readData(filename,',');
         if(lstData.size() > 0) {
-            message =  "Found " + (lstData.size() - 1) + " lines of data for processing";
+            message =  "Found " + (lstData.size() - 1) + " lines of data for processing (including header)";
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
         }
