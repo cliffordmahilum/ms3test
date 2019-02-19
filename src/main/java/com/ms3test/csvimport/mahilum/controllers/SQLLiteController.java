@@ -7,7 +7,9 @@ package com.ms3test.csvimport.mahilum.controllers;
 
 import com.ms3test.csvimport.mahilum.model.Columns;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Date;
 import javax.swing.JTextArea;
 /**
  *
@@ -83,6 +85,14 @@ public class SQLLiteController {
     public static boolean save(List<Columns> lstColumns, JTextArea txtLogs) {
 
         String message = "";
+        Date startTime = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+        String formattedStartTime = dateFormat.format(startTime);
+
+        message = "Time started: " + formattedStartTime;
+        System.out.println(message);
+        txtLogs.setText(txtLogs.getText() + "\n" + message);
+
         Connection conn = getConnection(txtLogs);
         
         message = "Preparing to save";
@@ -91,6 +101,7 @@ public class SQLLiteController {
         
         try {
             createDefaultTable(txtLogs);
+            conn.setAutoCommit(false);
             String sql = "INSERT INTO COLUMNS (A, B, C, D, E, F, G, H, I, J)" + 
                             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             // conn = DriverManager.getConnection("jdbc:sqlite:test.db");
@@ -128,6 +139,7 @@ public class SQLLiteController {
             message = "Saved " + count + " items\nDONE!";
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
+            conn.commit();
             ps.close();
             conn.close();
             
@@ -137,6 +149,14 @@ public class SQLLiteController {
             txtLogs.setText(txtLogs.getText() + "\n" + message);
             return false;
         }
+        
+        Date endTime = new Date();
+        String formattedEndTime = dateFormat.format(endTime);
+
+        message = "Time started: " + formattedEndTime;
+        System.out.println(message);
+        txtLogs.setText(txtLogs.getText() + "\n" + message);
+
         return true;
     }
     
@@ -147,7 +167,7 @@ public class SQLLiteController {
         try {
             createDefaultTable(null);
             Class.forName("org.sqlite.JDBC");
-            conn = DriverManager.getConnection("jdbc:sqlite:test.db");
+            // conn = DriverManager.getConnection("jdbc:sqlite:test.db");
 
             for(Columns col: lstColumns.subList(5995, lstColumns.size() - 1)) {
                 conn.setAutoCommit(false);
