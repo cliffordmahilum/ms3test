@@ -129,7 +129,7 @@ public class SQLLiteController {
             conn.commit();
             
             Statement stmt = conn.createStatement();
-            stmt.executeUpdate("backup to backup.db");
+            stmt.executeUpdate("backup to test.db");
             
             ps.close();
             conn.close();
