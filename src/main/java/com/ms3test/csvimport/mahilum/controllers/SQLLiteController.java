@@ -1,11 +1,7 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ms3test.csvimport.mahilum.controllers;
 
 import com.ms3test.csvimport.mahilum.model.Columns;
+import com.ms3test.csvimport.mahilum.tools.SharedValues;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -25,7 +21,7 @@ public class SQLLiteController {
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
             Class.forName("org.sqlite.JDBC");
-            conn = DriverManager.getConnection("jdbc:sqlite:test.db");
+            conn = DriverManager.getConnection("jdbc:sqlite::memory:");
             // System.out.println("Opened database successfully");
         } catch ( Exception ex ) {
             // System.err.println( e.getClass().getName() + ": " + e.getMessage() );
@@ -41,20 +37,16 @@ public class SQLLiteController {
         return conn;
     }
     
-    public static boolean createDefaultTable(JTextArea txtLogs)
+    public static boolean createDefaultTable(JTextArea txtLogs, Connection conn) throws Exception
     {
         String message;
-        Connection conn = null;
         Statement stmt = null;
+        int result;
         try {
-            message = "Check existing/creating table";
+            message = "Checking existing/creating table";
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
-
-            // Class.forName("org.sqlite.JDBC");
-            // c = DriverManager.getConnection("jdbc:sqlite:test.db");
-            //System.out.println("Opened database successfully");
-            conn = getConnection(txtLogs);
+            
             stmt = conn.createStatement();
             String sql = "CREATE TABLE IF NOT EXISTS COLUMNS " +
             "(ID INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -68,14 +60,14 @@ public class SQLLiteController {
             " H BOOLEAN NOT NULL, " +
             " I BOOLEAN NOT NULL, " +
             " J TEXT NOT NULL)";
-            stmt.executeUpdate(sql);
+            result = stmt.executeUpdate(sql);
             stmt.close();
-            conn.close();
         } catch ( Exception ex ) {
             // System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             message = ex.getMessage();
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
+            conn.close();
             return false;
         }
         System.out.println("Table created successfully");
@@ -83,15 +75,7 @@ public class SQLLiteController {
     }
    
     public static boolean save(List<Columns> lstColumns, JTextArea txtLogs) {
-
         String message = "";
-        Date startTime = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-        String formattedStartTime = dateFormat.format(startTime);
-
-        message = "Time started: " + formattedStartTime;
-        System.out.println(message);
-        txtLogs.setText(txtLogs.getText() + "\n" + message);
 
         Connection conn = getConnection(txtLogs);
         
@@ -100,11 +84,13 @@ public class SQLLiteController {
         txtLogs.setText(txtLogs.getText() + "\n" + message);
         
         try {
-            createDefaultTable(txtLogs);
+            if(!createDefaultTable(txtLogs, conn)) {
+                throw new Exception("");
+            }
             conn.setAutoCommit(false);
             String sql = "INSERT INTO COLUMNS (A, B, C, D, E, F, G, H, I, J)" + 
                             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            // conn = DriverManager.getConnection("jdbc:sqlite:test.db");
+
             PreparedStatement ps = conn.prepareStatement(sql);
 
             final int batchSize = 500;
@@ -136,10 +122,15 @@ public class SQLLiteController {
                 }
             }
             ps.executeBatch(); // insert remaining records
-            message = "Saved " + count + " items\nDONE!";
+            message = "Saved " + count + " items";
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
+            // ps.executeQuery("backup to back.db");
             conn.commit();
+            
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate("backup to backup.db");
+            
             ps.close();
             conn.close();
             
@@ -147,60 +138,12 @@ public class SQLLiteController {
             message = ex.getMessage();
             System.out.println(message);
             txtLogs.setText(txtLogs.getText() + "\n" + message);
+            // SharedValues.processCount = 0;
+            SharedValues.setErrorCount(SharedValues.getErrorCount() + SharedValues.getSuccessCount());
+            SharedValues.setSuccessCount(0);
             return false;
         }
         
-        Date endTime = new Date();
-        String formattedEndTime = dateFormat.format(endTime);
-
-        message = "Time started: " + formattedEndTime;
-        System.out.println(message);
-        txtLogs.setText(txtLogs.getText() + "\n" + message);
-
-        return true;
-    }
-    
-    // this is temporarily unused method
-    public static boolean save(List<Columns> lstColumns, String sf) {
-        Connection conn = getConnection(null);
-        Statement stmt = null;
-        try {
-            createDefaultTable(null);
-            Class.forName("org.sqlite.JDBC");
-            // conn = DriverManager.getConnection("jdbc:sqlite:test.db");
-
-            for(Columns col: lstColumns.subList(5995, lstColumns.size() - 1)) {
-                conn.setAutoCommit(false);
-
-                stmt = conn.createStatement();
-                String sql = "INSERT INTO COLUMNS (A, B, C, D, E, F, G, H, I, J)" 
-                    + " VALUES ("
-                    + "'" + col.getA().replace("'","''") + "', "
-                    + "'" + col.getB().replace("'","''") + "', "
-                    + "'" + col.getC().replace("'","''") + "', "
-                    + "'" + col.getD().replace("'","''") + "', "
-                    // + "'" + col.getE() + "', "
-                    + "'" + "e" + "', "
-                    + "'" + col.getF().replace("'","''") + "', "
-                    + col.getG() + ", "
-                    + col.getH() + ", "
-                    + col.getI() + ", "
-                    + "'" + col.getJ().replace("'","''") + "'"
-                    + ");";
-                System.out.println(lstColumns.indexOf(col) + ": " + sql);
-                stmt.executeUpdate(sql);
-                conn.commit();
-            }            
-            stmt.close();
-            conn.close();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-            return false;
-        }
-        return true;
-    }
-    
-    public static boolean delete(long id){
         return true;
     }
 }
